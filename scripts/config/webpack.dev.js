@@ -2,6 +2,7 @@ const { merge } = require('webpack-merge')
 const common = require('./webpack.common')
 const { SERVER_HOST, SERVER_PORT } = require('../constant')
 const path = require('path')
+const webpack = require('webpack')
 
 /**
  * @description 开发环境配置
@@ -16,6 +17,9 @@ module.exports = merge(common, {
     clientLogLevel: 'silent',     // 日志等级
     compress: true,               // 是否启用gzip压缩
     open: true,                   // 打开默认浏览器
-    hot: true,                    // 启用热更新
-  }
+    hot: true
+  },
+  plugins: [
+    new webpack.HotModuleReplacementPlugin(),   // 使用这个出口文件就不能配成contenthash
+  ]
 })

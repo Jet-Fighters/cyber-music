@@ -1,10 +1,18 @@
 
 
 const path = require('path')
+
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CopyPlugin = require('copy-webpack-plugin')
+const WebpackBar = require('webpackbar')
+const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin')
+const HardSourceWebpackPlugin = require('hard-source-webpack-plugin')
+
+
+const webpack = require('webpack')
 const { PROJECT_PATH, isDev } = require('../constant')
-const { resolve } = require('path')
+
 
 
 /**
@@ -16,18 +24,15 @@ const getCssLoaders = (importLoaders) => [
   {
     loader: 'css-loader',
     options: {
-      modules: false,
+      modules: true,
       sourceMap: isDev,
-      importLoaders
+      importLoaders,
     }
   },
   {
     loader: 'postcss-loader',
   }
 ]
-
-
-
 
 /**
  * @description 公共的webpack配置
@@ -37,17 +42,24 @@ module.exports = {
     app: path.resolve(PROJECT_PATH, './src/index.tsx'),                 // 入口文件
   },
   output: {
-    filename: `js/[name]${isDev ? '' : '.[contenthash:8]'}.js`,         // 开发环境不需要配哈希值  
+    filename: `js/[name]${isDev ? '' : '.[hash:8]'}.js`,                // 开发环境不需要配哈希值  
     path: path.resolve(PROJECT_PATH, './dist')                          // 出口文件夹
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.js', '.json'],                        // 在导入语句没带文件后缀时，Webpack 会自动带上后缀后去尝试访问文件是否存在
     // 更改文件路径映射，避免多层级 ../
     alias: {
-      'Src': resolve(PROJECT_PATH, './src'),
-      'Components': resolve(PROJECT_PATH, './src/components'),
-      'Utils': resolve(PROJECT_PATH, './src/utils'),
+      'Src': path.resolve(PROJECT_PATH, './src'),
+      'Components': path.resolve(PROJECT_PATH, './src/components'),
+      'Utils': path.resolve(PROJECT_PATH, './src/utils'),
     }
+  },
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      name: true,
+    },
+    
   },
   module: {
     rules: [
@@ -59,7 +71,7 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: [...getCssLoaders(1)]
+        use: [...getCssLoaders(1)], 
       },
       {
         test: /\.less$/,
@@ -114,7 +126,7 @@ module.exports = {
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: resolve(PROJECT_PATH, './public/index.html'),
+      template: path.resolve(PROJECT_PATH, './public/index.html'),
       filename: 'index.html',
       cache: false,    // 特别重要：防止使用v6版本 copy-webpack-plugin 时代码修改刷新页面为空问题
       minify: isDev ? false : {
@@ -133,7 +145,25 @@ module.exports = {
       }
     }),
     new MiniCssExtractPlugin({
-      filename: `css/[name]${isDev ? '' : '.[contenthash:8]'}.css`,  
+      filename: 'css/[name].[contenthash:8].css',
+      chunkFilename: 'css/[name].[contenthash:8].css',
+      ignoreOrder: false,
     }),
+    new CopyPlugin([
+      {
+        from: path.resolve(PROJECT_PATH, './public'),    
+        to: path.resolve(PROJECT_PATH, './dist/public')        
+      }   
+    ]),
+    new WebpackBar({
+      name: '正在尝试与Rhodes Island™取得神经连接...',
+      color: '#fa8c16',
+    }),
+    new ForkTsCheckerWebpackPlugin({
+      typescript: {
+        configFile: path.resolve(PROJECT_PATH, './tsconfig.json'),
+      },
+    }),
+    new HardSourceWebpackPlugin(),
   ]
 }
